@@ -10,6 +10,7 @@ type deviceInitReq struct {
 type deviceInitResp struct {
 	Status       int    `json:statusCode`
 	StatusString string `json:statusString`
+	CurTime      string `json:curTime`
 }
 
 type licenseAllocReq struct {
@@ -34,6 +35,7 @@ type licenseFreeReq struct {
 type licenseFreeResp struct {
 	Status       int    `json:statusCode`
 	StatusString string `json:statusString`
+	curTime      string `json:curTime`
 }
 
 type deviceHBPunchIn struct {
