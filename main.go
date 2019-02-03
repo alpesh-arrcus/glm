@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-    ctx := ParseCmdLineArgs()
+	ctx := ParseCmdLineArgs()
 
 	ctx = InitLicenseDb(ctx)
 

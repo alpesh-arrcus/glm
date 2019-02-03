@@ -95,5 +95,3 @@ type uiCustomerReportResp struct {
 	StatusString string          `json:statusString`
 	CurLicStatus []licenseStatus `json:currentLicenseStatus`
 }
-
-

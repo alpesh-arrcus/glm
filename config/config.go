@@ -2,12 +2,12 @@ package config
 
 import (
 	"flag"
-        //"fmt"
+	//"fmt"
 	"github.com/go-ini/ini"
 	"github.com/rs/zerolog"
+	. "github.com/toravir/glm/context"
 	"log"
 	"os"
-        . "github.com/toravir/glm/context"
 )
 
 var (
@@ -15,18 +15,18 @@ var (
 )
 
 type configState struct {
-    iniCfg *ini.File
-    logger zerolog.Logger
-    listenAddr string
-    dbSrc string
+	iniCfg     *ini.File
+	logger     zerolog.Logger
+	listenAddr string
+	dbSrc      string
 }
 
 func ParseCmdLineArgs() Context {
-        ctx := CreateContext()
-        cfgSt := configState{
-            logger : zerolog.New(os.Stdout).Level(zerolog.ErrorLevel).With().Timestamp().Logger(),
-        }
-        ctx.Config = &cfgSt
+	ctx := CreateContext()
+	cfgSt := configState{
+		logger: zerolog.New(os.Stdout).Level(zerolog.ErrorLevel).With().Timestamp().Logger(),
+	}
+	ctx.Config = &cfgSt
 
 	config := flag.String("config", "", "specify file which contains config for GLM")
 	flag.Parse()
@@ -35,18 +35,18 @@ func ParseCmdLineArgs() Context {
 		log.Fatal("Please specify a config file! Exiting..")
 	}
 
-        iniCfg, err := ini.Load(*config)
+	iniCfg, err := ini.Load(*config)
 	if iniCfg == nil || err != nil {
 		log.Fatal("Cannot load Config file:!!", err)
 	}
-        cfgSt.iniCfg = iniCfg
-        parseLogConfig(&cfgSt)
-        parseGlobalConfig(&cfgSt)
-        parseDbConfig(&cfgSt)
-        return ctx
+	cfgSt.iniCfg = iniCfg
+	parseLogConfig(&cfgSt)
+	parseGlobalConfig(&cfgSt)
+	parseDbConfig(&cfgSt)
+	return ctx
 }
 
-func parseLogConfig (cfgSt *configState) {
+func parseLogConfig(cfgSt *configState) {
 	logCfg := cfgSt.iniCfg.Section("glm_logger")
 	logLevelCfg := logCfg.Key("level").String()
 	logDestCfg := logCfg.Key("destination").String()
@@ -76,34 +76,34 @@ func parseLogConfig (cfgSt *configState) {
 	cfgSt.logger = zerolog.New(logDest).Level(logLevel).With().Timestamp().Logger()
 }
 
-func parseGlobalConfig (cfgSt *configState) {
+func parseGlobalConfig(cfgSt *configState) {
 	globalCfg := cfgSt.iniCfg.Section("global")
 	saddr := globalCfg.Key("listenAddress").String()
-        cfgSt.logger.Debug().Str("listenAddr", saddr).Msg("Loaded Config")
+	cfgSt.logger.Debug().Str("listenAddr", saddr).Msg("Loaded Config")
 	if saddr == "" {
 		//Crash and burn
 		log.Fatal("Please specify listenAddress in the config file !")
 	}
-        cfgSt.listenAddr = saddr
+	cfgSt.listenAddr = saddr
 }
 
-func parseDbConfig (cfgSt *configState) {
+func parseDbConfig(cfgSt *configState) {
 	dbCfg := cfgSt.iniCfg.Section("glm_database")
 	dbSrc := dbCfg.Key("databaseName").String()
-        cfgSt.dbSrc = dbSrc
+	cfgSt.dbSrc = dbSrc
 }
 
-func GetGLMListenAddress (ctx Context) string {
-    cfgSt, _ := ctx.Config.(*configState)
-    return cfgSt.listenAddr
+func GetGLMListenAddress(ctx Context) string {
+	cfgSt, _ := ctx.Config.(*configState)
+	return cfgSt.listenAddr
 }
 
-func GetLogger (ctx Context) *zerolog.Logger {
-    cfgSt, _ := ctx.Config.(*configState)
-    return &cfgSt.logger
+func GetLogger(ctx Context) *zerolog.Logger {
+	cfgSt, _ := ctx.Config.(*configState)
+	return &cfgSt.logger
 }
 
-func GetDBSourceName (ctx Context) string {
-    cfgSt, _ := ctx.Config.(*configState)
-    return cfgSt.dbSrc
+func GetDBSourceName(ctx Context) string {
+	cfgSt, _ := ctx.Config.(*configState)
+	return cfgSt.dbSrc
 }

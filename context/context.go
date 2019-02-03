@@ -1,16 +1,16 @@
 package context
 
 import (
-    //"fmt"
+//"fmt"
 )
 
 // Each module keeps its data here
 type Context struct {
-    Config interface {}
-    DbInfo interface {}
-    RestInfo interface {}
+	Config   interface{}
+	DbInfo   interface{}
+	RestInfo interface{}
 }
 
-func CreateContext () Context {
-    return Context{}
+func CreateContext() Context {
+	return Context{}
 }
