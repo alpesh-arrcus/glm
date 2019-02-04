@@ -16,7 +16,6 @@ type deviceInitResp struct {
 type licenseAllocReq struct {
 	FeatureName    string `json:featureName`
 	Fingerprint    string `json:fingerPrint`
-	curTime        string `json:curTime`
 	CustomerName   string `json:customerName`
 	CustomerSecret string `json:customerSecret`
 }
@@ -24,6 +23,7 @@ type licenseAllocReq struct {
 type licenseAllocResp struct {
 	Status       int    `json:statusCode`
 	StatusString string `json:statusString`
+	CurTime      string `json:curTime`
 }
 
 type licenseFreeReq struct {

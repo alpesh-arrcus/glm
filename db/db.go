@@ -27,7 +27,7 @@ func InitLicenseDb(ctx Context) Context {
 	dataSource := config.GetDBSourceName(ctx)
 	db, err := sql.Open(dbDRIVER, dataSource)
 	if err != nil {
-		logger.Fatal().Str("DB", dataSource).AnErr("Error", err).Msg("Error opening dataSource")
+		logger.Error().Str("DB", dataSource).AnErr("Error", err).Msg("Error opening dataSource")
 	}
 	//Enable non-blocking read/write
 	db.Exec("PRAGMA journal_mode=WAL;")
@@ -38,7 +38,7 @@ func InitLicenseDb(ctx Context) Context {
         `
 	_, err = db.Exec(sqlStmt)
 	if err != nil {
-		logger.Fatal().AnErr("Error", err).Str("Sql Stmt", sqlStmt).Msg("Creating Customer Table")
+		logger.Error().AnErr("Error", err).Str("Sql Stmt", sqlStmt).Msg("Creating Customer Table")
 	}
 	return ctx
 }
@@ -52,7 +52,7 @@ func GetCustomerNames() []string {
 		var name string
 		err := rows.Scan(&name)
 		if err != nil {
-			logger.Fatal().AnErr("Error", err).Msg("Scanning rows...")
+			logger.Error().AnErr("Error", err).Msg("Scanning rows...")
 		}
 		customers = append(customers, name)
 	}
@@ -99,40 +99,50 @@ func IsValidCustomerSecret(custName string, inSecret string) bool {
 	return validCustomer
 }
 
-func AddDevice(custName string, devicefp string) (bool, bool) {
-	dbSt, _ := ctxCache.DbInfo.(*dbState)
-	tblName := fmt.Sprintf("%s_devices", custName)
-
+func createCustDevicesDb(db *sql.DB, custName string) (string, error) {
+	tblName := custName + "_devices"
 	sqlStmt := `create table if not exists ` + tblName + `(fp text not null primary key, lastHB text, status text not null); 
         `
-	_, err := dbSt.db.Exec(sqlStmt)
+	_, err := db.Exec(sqlStmt)
 	if err != nil {
-		logger.Fatal().AnErr("Error", err).Str("Sql Stmt", sqlStmt).Msg("Creating Customer Table")
+		logger.Debug().AnErr("Error", err).Str("Sql Stmt", sqlStmt).Msg("Creating Customer Table")
+		return tblName, err
 	}
+	return tblName, nil
+}
 
+func getDeviceStatus(db *sql.DB, custName, deviceFp string) (lastHb, status string) {
+	tblName := custName + "_devices"
 	qryStmt := fmt.Sprintf("select lastHB, status from %s where fp = ?", tblName)
-	rows, _ := dbSt.db.Query(qryStmt, devicefp)
-	status := ""
-	lastHb := ""
-	found := false
-	isnew := false
-
+	rows, _ := db.Query(qryStmt, deviceFp)
+	status = ""
+	lastHb = ""
 	for rows.Next() {
 		err := rows.Scan(&lastHb, &status)
 		if err == nil {
-			found = true
 			break
 		}
 	}
 	rows.Close()
+	return
+}
+
+func AddDevice(custName string, deviceFp string) (bool, bool) {
+	dbSt, _ := ctxCache.DbInfo.(*dbState)
+	tblName, _ := createCustDevicesDb(dbSt.db, custName)
+	lastHb, status := getDeviceStatus(dbSt.db, custName, deviceFp)
+
 	tsNow := time.Now().UTC().Format(time.RFC3339)
-	if found {
-		logger.Debug().Caller().Str("Customer", custName).Str("Device", devicefp).Str("DBStatus", status).Msg("Found device..")
+	isnew := false
+	if status != "" {
+		logger.Debug().Caller().Str("Customer", custName).
+			Str("Device", deviceFp).Str("DBStatus", status).
+			Str("lastHb", lastHb).
+			Msg("Found device..")
 		if status == "RMA" {
 			return false, false
 		}
-
-		updStmt := fmt.Sprintf("update %s set lastHB = '%s' where fp = '%s'", tblName, tsNow, devicefp)
+		updStmt := fmt.Sprintf("update %s set lastHB = '%s' where fp = '%s'", tblName, tsNow, deviceFp)
 		_, err := dbSt.db.Exec(updStmt)
 		if err != nil {
 			logger.Debug().Caller().AnErr("Error", err).Str("SqlStmt", updStmt).Msg("Update device in DB")
@@ -140,8 +150,8 @@ func AddDevice(custName string, devicefp string) (bool, bool) {
 		}
 	} else {
 		isnew = true
-		logger.Debug().Caller().Str("Customer", custName).Str("Device", devicefp).Msg("Adding device..")
-		addStmt := fmt.Sprintf("insert into %s (fp, lastHB, status) values ('%s', '%s', '%s')", tblName, devicefp, tsNow, "Active")
+		logger.Debug().Caller().Str("Customer", custName).Str("Device", deviceFp).Msg("Adding device..")
+		addStmt := fmt.Sprintf("insert into %s (fp, lastHB, status) values ('%s', '%s', '%s')", tblName, deviceFp, tsNow, "Active")
 		_, err := dbSt.db.Exec(addStmt)
 		if err != nil {
 			logger.Debug().Caller().AnErr("Error", err).Str("SqlStmt", addStmt).Msg("Adding device to DB")
@@ -149,4 +159,13 @@ func AddDevice(custName string, devicefp string) (bool, bool) {
 		}
 	}
 	return true, isnew
+}
+
+func AllocateLicense(custName, deviceFp, feature string) bool {
+	dbSt, _ := ctxCache.DbInfo.(*dbState)
+	lastHb, status := getDeviceStatus(dbSt.db, custName, deviceFp)
+	_ = lastHb
+	_ = status
+
+	return true
 }

@@ -110,8 +110,6 @@ func deviceInitHdlr(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if custName != req.CustomerName {
-		//Something fishy - payload has different name from the url ??
-		//Don't return any payload - may be an attacker ??
 		w.WriteHeader(503)
 		return
 	}
@@ -140,6 +138,19 @@ func deviceInitHdlr(w http.ResponseWriter, r *http.Request) {
 func deviceHBHdlr(w http.ResponseWriter, r *http.Request) {
 }
 
+func writeLicenseAllocResp(w http.ResponseWriter, httpStatus int, respStatus int, respStr string, tm string) {
+	var resp licenseAllocResp
+
+	resp.Status = respStatus
+	resp.StatusString = respStr
+	resp.CurTime = tm
+	w.WriteHeader(httpStatus)
+
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		logger.Debug().Caller().AnErr("Error", err).Msg("When Encoding resp")
+	}
+}
+
 func licenseAllocHdlr(w http.ResponseWriter, r *http.Request) {
 	custName, ok := validateUrl(w, r)
 	if !ok {
@@ -150,14 +161,12 @@ func licenseAllocHdlr(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req deviceInitReq
+	var req licenseAllocReq
 	if err := json.Unmarshal(body, &req); err != nil {
-		handleUnmarshallErr("deviceInitReq", err, w)
+		handleUnmarshallErr("licenseAllocReq", err, w)
 		return
 	}
 	if custName != req.CustomerName {
-		//Something fishy - payload has different name from the url ??
-		//Don't return any payload - may be an attacker ??
 		w.WriteHeader(503)
 		return
 	}
@@ -166,20 +175,15 @@ func licenseAllocHdlr(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	status, isnew := db.AddDevice(custName, req.Fingerprint)
 	httpStatus, respStatus := 200, 200
 	respStr := "Successful"
 	tm := time.Now().UTC().Format(time.RFC3339)
-	if !status {
-		respStatus = 400
-		respStr = "Backend Device registration Failed!"
-	} else {
-		if isnew {
-			httpStatus = 201
-			respStatus = 201 //indicate we have registered this device for first time
-		}
+	if !db.AllocateLicense(custName, req.Fingerprint, req.FeatureName) {
+		httpStatus = 401
+		respStatus = 401
+		respStr = "No License Available"
 	}
-	writeDeviceInitResp(w, httpStatus, respStatus, respStr, tm)
+	writeLicenseAllocResp(w, httpStatus, respStatus, respStr, tm)
 	return
 }
 
