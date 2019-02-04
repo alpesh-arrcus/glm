@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
-	"github.com/toravir/glm/config"
 	"github.com/rs/zerolog"
+	"github.com/toravir/glm/config"
 	. "github.com/toravir/glm/context"
 	"time"
 )

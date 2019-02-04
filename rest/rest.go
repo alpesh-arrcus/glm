@@ -36,7 +36,7 @@ func ListenAndServe(ctx Context) error {
 	return nil
 }
 
-func validateUrl(w http.ResponseWriter, r *http.Request) (string,bool) {
+func validateUrl(w http.ResponseWriter, r *http.Request) (string, bool) {
 	params := mux.Vars(r)
 	custName := params["customerName"]
 
@@ -44,9 +44,9 @@ func validateUrl(w http.ResponseWriter, r *http.Request) (string,bool) {
 		logger.Debug().Caller().Str("CustomerName", custName).Str("Status", "Invalid CustomerName").
 			Msg("failing request")
 		w.WriteHeader(404)
-		return custName,false
+		return custName, false
 	}
-	return custName,true
+	return custName, true
 }
 
 func fetchPayload(w http.ResponseWriter, r *http.Request) ([]byte, bool) {
