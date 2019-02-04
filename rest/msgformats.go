@@ -14,6 +14,7 @@ type deviceInitResp struct {
 }
 
 type licenseAllocReq struct {
+	FeatureName    string `json:featureName`
 	Fingerprint    string `json:fingerPrint`
 	curTime        string `json:curTime`
 	CustomerName   string `json:customerName`

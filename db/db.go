@@ -5,12 +5,14 @@ import (
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/toravir/glm/config"
+	"github.com/rs/zerolog"
 	. "github.com/toravir/glm/context"
 	"time"
 )
 
 var dbDRIVER = "sqlite3" //because we have loaded 'go-sqlite3'
 var ctxCache Context
+var logger *zerolog.Logger
 
 type dbState struct {
 	db *sql.DB
@@ -21,14 +23,14 @@ func InitLicenseDb(ctx Context) Context {
 	ctx.DbInfo = &dbSt
 
 	ctxCache = ctx
-	logger := config.GetLogger(ctx)
+	logger = config.GetLogger(ctx)
 	dataSource := config.GetDBSourceName(ctx)
 	db, err := sql.Open(dbDRIVER, dataSource)
 	if err != nil {
 		logger.Fatal().Str("DB", dataSource).AnErr("Error", err).Msg("Error opening dataSource")
 	}
 	//Enable non-blocking read/write
-	//db.Exec("PRAGMA journal_mode=WAL;")
+	db.Exec("PRAGMA journal_mode=WAL;")
 	dbSt.db = db
 
 	sqlStmt := `
@@ -43,7 +45,6 @@ func InitLicenseDb(ctx Context) Context {
 
 func GetCustomerNames() []string {
 	dbSt, _ := ctxCache.DbInfo.(*dbState)
-	logger := config.GetLogger(ctxCache)
 	customers := []string{}
 	rows, _ := dbSt.db.Query("select name from customers")
 	defer rows.Close()
@@ -60,7 +61,6 @@ func GetCustomerNames() []string {
 
 func IsValidCustomer(custName string) bool {
 	dbSt, _ := ctxCache.DbInfo.(*dbState)
-	logger := config.GetLogger(ctxCache)
 	validCustomer := false
 
 	rows, _ := dbSt.db.Query("select status from customers where name = ?", custName)
@@ -81,7 +81,6 @@ func IsValidCustomer(custName string) bool {
 
 func IsValidCustomerSecret(custName string, inSecret string) bool {
 	dbSt, _ := ctxCache.DbInfo.(*dbState)
-	logger := config.GetLogger(ctxCache)
 	validCustomer := false
 
 	rows, _ := dbSt.db.Query("select secret from customers where name = ?", custName)
@@ -102,7 +101,6 @@ func IsValidCustomerSecret(custName string, inSecret string) bool {
 
 func AddDevice(custName string, devicefp string) (bool, bool) {
 	dbSt, _ := ctxCache.DbInfo.(*dbState)
-	logger := config.GetLogger(ctxCache)
 	tblName := fmt.Sprintf("%s_devices", custName)
 
 	sqlStmt := `create table if not exists ` + tblName + `(fp text not null primary key, lastHB text, status text not null); 
