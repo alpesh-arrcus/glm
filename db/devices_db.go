@@ -42,6 +42,17 @@ func getDeviceStatus(db *sql.DB, custName, deviceFp string) (lastHb, status stri
 	return
 }
 
+func updateDevicesDb(db *sql.DB, custName, deviceFp, tsNow string) bool {
+	tblName := getCustomerDevicesTableName(custName)
+	updStmt := fmt.Sprintf("update %s set lastHB = '%s' where fp = '%s'", tblName, tsNow, deviceFp)
+	_, err := db.Exec(updStmt)
+	if err != nil {
+		logger.Debug().Caller().AnErr("Error", err).Str("SqlStmt", updStmt).Msg("Update device in DB")
+		return false
+	}
+	return true
+}
+
 func AddDevice(custName string, deviceFp string) (bool, bool) {
 	dbSt, _ := ctxCache.DbInfo.(*dbState)
 	tblName, _ := createCustDevicesDb(dbSt.db, custName)
@@ -57,10 +68,7 @@ func AddDevice(custName string, deviceFp string) (bool, bool) {
 		if status == "RMA" {
 			return false, false
 		}
-		updStmt := fmt.Sprintf("update %s set lastHB = '%s' where fp = '%s'", tblName, tsNow, deviceFp)
-		_, err := dbSt.db.Exec(updStmt)
-		if err != nil {
-			logger.Debug().Caller().AnErr("Error", err).Str("SqlStmt", updStmt).Msg("Update device in DB")
+		if !updateDevicesDb(dbSt.db, custName, deviceFp, tsNow) {
 			return false, false
 		}
 	} else {
@@ -74,4 +82,37 @@ func AddDevice(custName string, deviceFp string) (bool, bool) {
 		}
 	}
 	return true, isnew
+}
+
+func DeviceHeartBeat(custName, deviceFp string, autoRealloc bool) (expiredLics []string, err error) {
+	expiredLics = []string{}
+	dbSt, _ := ctxCache.DbInfo.(*dbState)
+
+	lastHb, status := getDeviceStatus(dbSt.db, custName, deviceFp)
+	if status != "Active" {
+		logger.Error().Str("Status", status).
+			Str("deviceFp", deviceFp).
+			Msg("heartbeat from a non-active device...")
+
+		err = fmt.Errorf("Device not active - but getting HB...")
+		return
+	}
+
+	timeNow := time.Now().UTC()
+	timeLast, err := time.Parse(time.RFC3339, lastHb)
+	if err != nil {
+		logger.Error().Str("lastHB", lastHb).
+			AnErr("ParseError", err).
+			Msg("Parsing last HB...")
+		timeLast = timeNow
+	}
+	tsNow := timeNow.Format(time.RFC3339)
+	if !updateDevicesDb(dbSt.db, custName, deviceFp, tsNow) {
+		err = fmt.Errorf("Error updating Devices Db!")
+		return
+	}
+	elapsed := timeNow.Sub(timeLast)
+	secondsToSub := int(elapsed.Seconds())
+	expiredLics, err = updateLicenseUsage(custName, deviceFp, autoRealloc, secondsToSub)
+	return
 }

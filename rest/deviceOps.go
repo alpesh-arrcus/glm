@@ -62,4 +62,47 @@ func deviceInitHdlr(w http.ResponseWriter, r *http.Request) {
 }
 
 func deviceHBHdlr(w http.ResponseWriter, r *http.Request) {
+	custName, ok := validateUrl(w, r)
+	if !ok {
+		return
+	}
+	body, ok := fetchPayload(w, r)
+	if !ok {
+		return
+	}
+
+	var req deviceHBPunchIn
+	if err := json.Unmarshal(body, &req); err != nil {
+		handleUnmarshallErr("deviceHBHdlr", err, w)
+		return
+	}
+	if custName != req.CustomerName {
+		w.WriteHeader(503)
+		return
+	}
+
+	if !validateCustomerSecret(w, custName, req.CustomerSecret) {
+		return
+	}
+
+	httpStatus, respStatus := 200, 200
+	respStr := "Successful"
+
+	expiredLics, err := db.DeviceHeartBeat(req.CustomerName, req.Fingerprint, req.AutoRealloc)
+	if err != nil {
+		httpStatus, respStatus = 400, 400
+		respStr = "Error Processing Heartbeat."
+	}
+	tsNow := time.Now().UTC().Format(time.RFC3339)
+
+	var resp deviceHBPunchOut
+	resp.Status = respStatus
+	resp.StatusString = respStr
+	resp.CurTime = tsNow
+	resp.ExpiredLics = expiredLics
+
+	w.WriteHeader(httpStatus)
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		logger.Debug().Caller().AnErr("Error", err).Msg("When Encoding resp")
+	}
 }
