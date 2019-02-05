@@ -13,7 +13,7 @@ func GetCustomerNames() []string {
 	dbSt, _ := ctxCache.DbInfo.(*dbState)
 	customers := []string{}
 	tblName := getCustomersTableName()
-	rows, err := dbSt.db.Query("select name from " + tblName)
+	rows, err := dbSt.db.Query("select customerName from " + tblName)
 	if err != nil {
 		logger.Error().AnErr("Error", err).Msg("Querying list of Customers..")
 		return customers
@@ -36,7 +36,7 @@ func IsValidCustomer(custName string) (status string, ok bool) {
 	ok = false
 
 	tblName := getCustomersTableName()
-	rows, err := dbSt.db.Query("select status from "+tblName+" where name = ?", custName)
+	rows, err := dbSt.db.Query("select status from "+tblName+" where customerName = ?", custName)
 	if err != nil {
 		logger.Error().AnErr("Error", err).Msg("Querying list of Customers..")
 		return
@@ -62,7 +62,7 @@ func IsValidCustomerSecret(custName string, inSecret string) bool {
 	validCustomer := false
 
 	tblName := getCustomersTableName()
-	rows, err := dbSt.db.Query("select secret from "+tblName+" where name = ?", custName)
+	rows, err := dbSt.db.Query("select customerSecret from "+tblName+" where customerName = ?", custName)
 	if err != nil {
 		logger.Error().AnErr("Error", err).Msg("Querying list of Customers..")
 	}

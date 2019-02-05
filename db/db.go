@@ -33,7 +33,7 @@ func InitLicenseDb(ctx Context) Context {
 
 	tblName := getCustomersTableName()
 	sqlStmt := `
-        create table if not exists ` + tblName + ` (name text not null primary key, secret text not null, id integer not null, status text not null);
+        create table if not exists ` + tblName + ` (customerName text not null primary key, customerSecret text not null, id integer not null, status text not null);
         `
 	_, err = db.Exec(sqlStmt)
 	if err != nil {
