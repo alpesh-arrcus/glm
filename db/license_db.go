@@ -39,14 +39,12 @@ func lookupLicenseAllocs(db *sql.DB, custName, deviceFp, feature string) (lastUs
 	return
 }
 
-func updateLicenseAllocs(db *sql.DB, custName, deviceFp, feature, curTime string, periodLeft int) (ok bool) {
+func updateLicenseAllocs(db *sql.DB, custName, deviceFp, feature, curTime string) (ok bool) {
 	tblName := getCustomerLicenseAllocsTableName(custName)
-	status := "Expired"
-	if periodLeft > 0 {
-		status = "InUse"
-	}
-	qryStmt := fmt.Sprintf("update %s set lastUse = '%s', status = '%s', periodLeft = %d where devicefp = ? and featureName = ?", tblName,
-		curTime, status, periodLeft)
+	status := "InUse"
+	qryStmt := fmt.Sprintf("update %s set lastUse = '%s', status = '%s' "+
+		"where devicefp = ? and featureName = ? and status = 'Available'",
+		tblName, curTime, status)
 	_, err := db.Exec(qryStmt, deviceFp, feature)
 	if err != nil {
 		logger.Error().Caller().Str("Stmt", qryStmt).AnErr("Error", err).
@@ -103,7 +101,7 @@ func AllocateLicense(custName, deviceFp, feature string) bool {
 	if pl > 0 {
 		//Start the time
 		tsNow := time.Now().UTC().Format(time.RFC3339)
-		if !updateLicenseAllocs(dbSt.db, custName, deviceFp, feature, tsNow, pl) {
+		if !updateLicenseAllocs(dbSt.db, custName, deviceFp, feature, tsNow) {
 			return false
 		}
 		return true

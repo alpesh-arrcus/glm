@@ -93,8 +93,8 @@ curl -k -H 'Content-Type: application/json'  https://localhost:11223/c1/licenseF
 echo "26. Verify license Status is not InUse"
 echo "select * from c1_licenseAllocs;" | sqlite3 $DBPATH
 
-echo "27. Sleep for 50s"
-sleep 50
+echo "27. Sleep for 10s"
+sleep 10
 
 echo "28. Punch HB verify expiredLicenses stays empty"
 curl -k -H 'Content-Type: application/json'  https://localhost:11223/c1/deviceHB -d '{"customerName":"c1", "customerSecret":"c1123", "fingerPrint":"device1", "curTime" :"soemtime", "autoReAllocExpiring": true}'
@@ -102,4 +102,30 @@ curl -k -H 'Content-Type: application/json'  https://localhost:11223/c1/deviceHB
 echo "29. Verify license Status is not InUse and periodLeft stays same"
 echo "select * from c1_licenseAllocs;" | sqlite3 $DBPATH
 
-echo "30. Done"
+echo "30. Allocate a license to see if half-used license gets used."
+curl -k -H 'Content-Type: application/json'  https://localhost:11223/c1/licenseAlloc -d '{"customerName":"c1", "customerSecret":"c1123", "fingerPrint":"device1", "featureName" : "feat1" }'
+
+echo "31. Verify originally un-used license gets used"
+echo "select * from c1_purchases;" | sqlite3 $DBPATH
+echo "select * from c1_licenseAllocs;" | sqlite3 $DBPATH
+
+echo "32. Punch HB"
+curl -k -H 'Content-Type: application/json'  https://localhost:11223/c1/deviceHB -d '{"customerName":"c1", "customerSecret":"c1123", "fingerPrint":"device1", "curTime" :"soemtime", "autoReAllocExpiring": true}'
+
+echo "33. Sleep for 30s"
+sleep 30
+
+echo "34. Punch HB - autoRenew = false"
+curl -k -H 'Content-Type: application/json'  https://localhost:11223/c1/deviceHB -d '{"customerName":"c1", "customerSecret":"c1123", "fingerPrint":"device1", "curTime" :"soemtime", "autoReAllocExpiring": false}'
+
+echo "35. Sleep for 40s"
+sleep 40
+
+echo "36. Punch HB - autoRenew = false, check expired lics"
+curl -k -H 'Content-Type: application/json'  https://localhost:11223/c1/deviceHB -d '{"customerName":"c1", "customerSecret":"c1123", "fingerPrint":"device1", "curTime" :"soemtime", "autoReAllocExpiring": false}'
+
+echo "37. Final look at all the customer's tables"
+echo "select * from c1_purchases;" | sqlite3 $DBPATH
+echo "select * from c1_licenseAllocs;" | sqlite3 $DBPATH
+
+echo "38. Done"
