@@ -1,6 +1,6 @@
 #!/bin/bash
 
-DBPATH=/tmp/glm.db
+DBPATH=/data/glm.db
 
 rm -f $DBPATH
 pkill glm
