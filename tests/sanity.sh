@@ -5,8 +5,7 @@ DBPATH=/data/glm.db
 rm -f $DBPATH
 pkill glm
 
-cd ../
-./glm -config ./example_cfg.ini &
+./glm -config /tmp/example_cfg.ini &
 
 sleep 1
 
