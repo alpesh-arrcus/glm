@@ -62,18 +62,12 @@ type deviceHBPunchOut struct {
 
 type billingAddPurchaseReq struct {
 	CustomerName string `json:customerName`
+	FeatureName  string `json:featureName`
+	LicenseCount int    `json:licenseCount`
+	UsagePeriod  int    `json:usagePeriod` //in seconds
 }
 
 type billingAddPurchaseResp struct {
-	Status       int    `json:statusCode`
-	StatusString string `json:statusString`
-}
-
-type billingNewCustomerReq struct {
-	CustomerName string `json:customerName`
-}
-
-type billingNewCustomerResp struct {
 	Status       int    `json:statusCode`
 	StatusString string `json:statusString`
 }
