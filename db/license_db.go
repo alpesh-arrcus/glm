@@ -141,7 +141,7 @@ func updateLicenseUsage(custName, deviceFp string, autoRealloc bool, secsToSub i
 
 	//Set expired Licenses
 	qryStmt = fmt.Sprintf("update %s set periodLeft = 0, status = 'Expired' "+
-		"where devicefp = ? and periodLeft < %d", tblName,
+		"where devicefp = ? and periodLeft < %d and status = 'InUse'", tblName,
 		secsToSub)
 	_, err = db.Exec(qryStmt, deviceFp)
 	if err != nil {
@@ -153,7 +153,7 @@ func updateLicenseUsage(custName, deviceFp string, autoRealloc bool, secsToSub i
 
 	//decrement usage for non expiring licenses
 	qryStmt = fmt.Sprintf("update %s set periodLeft = periodLeft - %d "+
-		"where devicefp = ? and periodLeft >= %d", tblName,
+		"where devicefp = ? and periodLeft >= %d and status = 'InUse'", tblName,
 		secsToSub, secsToSub)
 	_, err = db.Exec(qryStmt, deviceFp)
 	if err != nil {
