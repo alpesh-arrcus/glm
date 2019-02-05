@@ -6,4 +6,4 @@ RUN mkdir -p /certs && cp /go/src/github.com/toravir/glm/*.pem /certs
 RUN cp /go/src/github.com/toravir/glm/*.ini /tmp/
 EXPOSE 11223/tcp 
 VOLUME ["/data", "/logs", "/certs"]
-ENTRYPOINT ["/go/bin/glm", "-config", "/tmp/example_cfg.ini"]
+#ENTRYPOINT ["/go/bin/glm", "-config", "/tmp/example_cfg.ini"]
