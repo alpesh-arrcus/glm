@@ -24,7 +24,12 @@ func ListenAndServe(ctx Context) error {
 	}
 
 	router := urlRouter()
-	err = http.Serve(l, router)
+	isHttps, key, crt := config.GetHttpConfig(ctx)
+	if isHttps {
+		err = http.ServeTLS(l, router, crt, key)
+	} else {
+		err = http.Serve(l, router)
+	}
 	if err != nil {
 		panic(err)
 	}

@@ -19,6 +19,9 @@ type configState struct {
 	logger     zerolog.Logger
 	listenAddr string
 	dbSrc      string
+	isSecure   bool
+	serverKey  string // filename
+	serverCrt  string // filename
 }
 
 func ParseCmdLineArgs() Context {
@@ -84,7 +87,13 @@ func parseGlobalConfig(cfgSt *configState) {
 		//Crash and burn
 		log.Fatal("Please specify listenAddress in the config file !")
 	}
+	isHttps, _ := globalCfg.Key("https").Bool()
+	keyFile := globalCfg.Key("serverKey").String()
+	crtFile := globalCfg.Key("serverCert").String()
 	cfgSt.listenAddr = saddr
+	cfgSt.isSecure = isHttps
+	cfgSt.serverKey = keyFile
+	cfgSt.serverCrt = crtFile
 }
 
 func parseDbConfig(cfgSt *configState) {
@@ -106,4 +115,9 @@ func GetLogger(ctx Context) *zerolog.Logger {
 func GetDBSourceName(ctx Context) string {
 	cfgSt, _ := ctx.Config.(*configState)
 	return cfgSt.dbSrc
+}
+
+func GetHttpConfig(ctx Context) (isHttps bool, key, crt string) {
+	cfgSt, _ := ctx.Config.(*configState)
+	return cfgSt.isSecure, cfgSt.serverKey, cfgSt.serverCrt
 }

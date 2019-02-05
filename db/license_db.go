@@ -187,3 +187,28 @@ func updateLicenseUsage(custName, deviceFp string, autoRealloc bool, secsToSub i
 	err = nil
 	return
 }
+
+func FreeLicense(custName, deviceFp, feature string) bool {
+	dbSt, _ := ctxCache.DbInfo.(*dbState)
+	_, status := getDeviceStatus(dbSt.db, custName, deviceFp)
+	db := dbSt.db
+
+	if status != "Active" {
+		logger.Error().Str("Status", status).
+			Str("deviceFp", deviceFp).
+			Msg("allocate license for a non-active device...")
+		return false
+	}
+	tblName := getCustomerLicenseAllocsTableName(custName)
+
+	qryStmt := fmt.Sprintf("update %s set status = 'Available' "+
+		"where devicefp = ? and featureName = ? and periodLeft > 0 and status = 'InUse'", tblName)
+	_, err := db.Exec(qryStmt, deviceFp, feature)
+	if err != nil {
+		logger.Error().Caller().Str("Stmt", qryStmt).AnErr("Error", err).
+			Str("Customer", custName).Str("FP", deviceFp).
+			Msg("Update table failed")
+		return false
+	}
+	return true
+}

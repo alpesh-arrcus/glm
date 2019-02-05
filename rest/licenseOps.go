@@ -56,5 +56,51 @@ func licenseAllocHdlr(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
+func writeLicenseFreeResp(w http.ResponseWriter, httpStatus int, respStatus int, respStr string, tm string) {
+	var resp licenseFreeResp
+
+	resp.Status = respStatus
+	resp.StatusString = respStr
+	resp.CurTime = tm
+	w.WriteHeader(httpStatus)
+
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		logger.Debug().Caller().AnErr("Error", err).Msg("When Encoding resp")
+	}
+}
+
 func licenseFreeHdlr(w http.ResponseWriter, r *http.Request) {
+	custName, ok := validateUrl(w, r)
+	if !ok {
+		return
+	}
+	body, ok := fetchPayload(w, r)
+	if !ok {
+		return
+	}
+
+	var req licenseFreeReq
+	if err := json.Unmarshal(body, &req); err != nil {
+		handleUnmarshallErr("licenseFreeReq", err, w)
+		return
+	}
+	if custName != req.CustomerName {
+		w.WriteHeader(503)
+		return
+	}
+
+	if !validateCustomerSecret(w, custName, req.CustomerSecret) {
+		return
+	}
+
+	httpStatus, respStatus := 200, 200
+	respStr := "Successful"
+	tm := time.Now().UTC().Format(time.RFC3339)
+	if !db.FreeLicense(custName, req.Fingerprint, req.FeatureName) {
+		httpStatus = 401
+		respStatus = 401
+		respStr = "Error during License Free"
+	}
+	writeLicenseFreeResp(w, httpStatus, respStatus, respStr, tm)
+	return
 }

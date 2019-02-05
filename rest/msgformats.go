@@ -28,7 +28,8 @@ type licenseAllocResp struct {
 
 type licenseFreeReq struct {
 	Fingerprint    string `json:"fingerPrint"`
-	curTime        string `json:"curTime"`
+	FeatureName    string `json:"featureName"`
+	CurTime        string `json:"curTime"`
 	CustomerName   string `json:"customerName"`
 	CustomerSecret string `json:"customerSecret"`
 }
@@ -36,7 +37,7 @@ type licenseFreeReq struct {
 type licenseFreeResp struct {
 	Status       int    `json:"statusCode"`
 	StatusString string `json:"statusString"`
-	curTime      string `json:"curTime"`
+	CurTime      string `json:"curTime"`
 }
 
 type deviceHBPunchIn struct {
